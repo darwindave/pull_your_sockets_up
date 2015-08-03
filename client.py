@@ -27,6 +27,7 @@
 from autobahn.asyncio.websocket import WebSocketClientProtocol, \
     WebSocketClientFactory
 from queue import Queue, Empty
+import threading
 
 q = Queue()
 
@@ -39,7 +40,7 @@ class MyClientProtocol(WebSocketClientProtocol):
         print("WebSocket connection open.")
         self.sendMessage(u"Hello, world!".encode('utf8'))
         self.sendMessage(b"\x00\x01\x03\x04", isBinary=True)
-        self.factory.loop.call_later(0.05, self.check_queue())
+        self.check_queue()
 
     def check_queue(self):
         global q
@@ -49,6 +50,7 @@ class MyClientProtocol(WebSocketClientProtocol):
             pass
         else:
             self.sendMessage(msg.encode('utf8'))
+        self.factory.loop.call_later(1, self.check_queue)
 
     def onMessage(self, payload, isBinary):
         if isBinary:
@@ -58,6 +60,14 @@ class MyClientProtocol(WebSocketClientProtocol):
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
+
+
+def run_async_loop(loop, coro):
+    try:
+        while True:
+            loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 if __name__ == '__main__':
@@ -72,7 +82,14 @@ if __name__ == '__main__':
     factory.protocol = MyClientProtocol
 
     loop = asyncio.get_event_loop()
-    coro = loop.create_connection(factory, '127.0.0.1', 9000)
+    coro = loop.create_connection(factory, '10.8.1.234', 9000)
     my_proto = loop.run_until_complete(coro)
-    loop.run_forever()
-    loop.close()
+    try:
+        while True:
+            message = input("Put in message")
+            q.put(message)
+            for _ in range(10):
+                loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
