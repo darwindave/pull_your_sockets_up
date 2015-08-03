@@ -27,7 +27,11 @@
 from autobahn.asyncio.websocket import WebSocketClientProtocol, \
     WebSocketClientFactory
 import asyncio
+import logging
+import os
 
+os.environ["PYTHONASYNCIODEBUG"] = "True"
+logging.basicConfig(level=logging.DEBUG)
 q = asyncio.Queue()
 
 
@@ -72,11 +76,6 @@ def run_async_loop(loop, coro):
 
 if __name__ == '__main__':
 
-    try:
-    except ImportError:
-        # Trollius >= 0.3 was renamed
-        import trollius as asyncio
-
     factory = WebSocketClientFactory("ws://localhost:9000", debug=False)
     factory.protocol = MyClientProtocol
 
@@ -91,4 +90,3 @@ if __name__ == '__main__':
                 loop.run_until_complete(coro)
     finally:
         loop.close()
-
