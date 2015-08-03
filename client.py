@@ -26,10 +26,9 @@
 
 from autobahn.asyncio.websocket import WebSocketClientProtocol, \
     WebSocketClientFactory
-from queue import Queue, Empty
-import threading
+import asyncio
 
-q = Queue()
+q = asyncio.Queue()
 
 
 class MyClientProtocol(WebSocketClientProtocol):
@@ -47,7 +46,7 @@ class MyClientProtocol(WebSocketClientProtocol):
         global q
         try:
             msg = q.get_nowait()
-        except Empty:
+        except asyncio.QueueEmpty:
             pass
         else:
             self.sendMessage(msg.encode('utf8'))
@@ -74,7 +73,6 @@ def run_async_loop(loop, coro):
 if __name__ == '__main__':
 
     try:
-        import asyncio
     except ImportError:
         # Trollius >= 0.3 was renamed
         import trollius as asyncio

@@ -74,7 +74,7 @@ def run_async_loop(loop, coro):
 @asyncio.coroutine
 def read_input():
     while True:
-        message = input("Put in message", timeout)
+        message = input("Put in message")
         q.put(message)
         yield
 
