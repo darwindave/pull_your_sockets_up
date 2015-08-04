@@ -29,6 +29,8 @@ from autobahn.asyncio.websocket import WebSocketClientProtocol, \
 from queue import Queue, Empty
 import threading
 import asyncio
+import sys
+
 
 q = Queue()
 
@@ -47,11 +49,12 @@ class MyClientProtocol(WebSocketClientProtocol):
         global q
         try:
             msg = q.get_nowait()
+            #msg = yield from q.get_nowait()
         except Empty:
             pass
         else:
             self.sendMessage(msg.encode('utf8'))
-        self.factory.loop.call_later(1, self.check_queue)
+        self.factory.loop.call_later(0.010, self.check_queue)
 
     def onMessage(self, payload, isBinary):
         if isBinary:
@@ -74,9 +77,25 @@ def run_async_loop(loop, coro):
 @asyncio.coroutine
 def read_input():
     while True:
-        message = input("Put in message")
-        q.put(message)
-        yield
+        if not sys.stdin.isatty():
+            for line in sys.stdin:
+                print('.')
+                q.put(line)
+                yield
+        else:
+            print('.')
+            yield
+
+def read_file():
+    with open(r"C:\Users\dave_000\Downloads\richmondrowingclub.wordpress.2015-05-12.xml") as f:
+        for line in f.readline():
+            print('.')
+            q.put(line)
+
+
+def print_forever():
+    while True:
+        print('.'.join(['',sys.stdin.read()]))
 
 if __name__ == '__main__':
 
@@ -92,10 +111,8 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     coro = loop.create_connection(factory, 'localhost', 9000)
     my_proto = loop.run_until_complete(coro)
-    tasks = [
-        asyncio.async(read_input())]
+    loop.call_soon(read_file())
     try:
-        while True:
-            loop.run_until_complete(coro)
+        loop.run_forever()
     finally:
         loop.close()

@@ -27,9 +27,12 @@
 import time
 from autobahn.asyncio.websocket import WebSocketServerProtocol, \
     WebSocketServerFactory
-
+import uuid
 
 class MyServerProtocol(WebSocketServerProtocol):
+
+    def __init__(self):
+        self.file = open(''.join(['test-',str(uuid.uuid4()),'-output.txt']),'w')
 
     def onConnect(self, request):
         print("Client connecting: {0}".format(request.peer))
@@ -37,18 +40,21 @@ class MyServerProtocol(WebSocketServerProtocol):
     def onOpen(self):
         print("WebSocket connection open.")
 
+
+
     def onMessage(self, payload, isBinary):
         if isBinary:
             print("Binary message received: {0} bytes".format(len(payload)))
         else:
             print("Text message received: {0}".format(payload.decode('utf8')))
+            self.file.write("{0}".format(payload.decode('utf8')))
 
         # echo back message verbatim
-        self.sendMessage(payload, isBinary)
+        #self.sendMessage(payload, isBinary)
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
-
+        self.file.close()
 
 if __name__ == '__main__':
 
@@ -58,6 +64,8 @@ if __name__ == '__main__':
         # Trollius >= 0.3 was renamed
         import trollius as asyncio
 
+    #os.env['']
+
     factory = WebSocketServerFactory("ws://localhost:9000", debug=False)
     factory.protocol = MyServerProtocol
 
@@ -65,7 +73,8 @@ if __name__ == '__main__':
     coro = loop.create_server(factory, '0.0.0.0', 9000)
     server = loop.run_until_complete(coro)
     try:
-        loop.run_forever()
+        while(True):
+            loop.run_until_complete(coro)
     except KeyboardInterrupt:
         pass
     finally:
