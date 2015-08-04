@@ -43,7 +43,7 @@ clients = {}  # task -> (reader, writer)
 
 
 def accept_client(client_reader, client_writer):
-    task = asyncio.Task(handle_client(client_reader, client_writer))
+    task = asyncio.Task(handle_client_file(client_reader, client_writer))
     clients[task] = (client_reader, client_writer)
 
     def client_done(task):
@@ -93,6 +93,31 @@ async def handle_client(client_reader, client_writer):
             break
         response = ("ECHO %d: %s\n" % (i, sdata))
         client_writer.write(response.encode())
+
+
+async def handle_client_file(client_reader, client_writer):
+    # now be an echo back server until client sends a bye
+    i = 0  # sequence number
+
+    # let client know we are ready
+    client_writer.write("READY\n".encode())
+    while True:
+        i = i + 1
+        # wait for input from client
+        data = await asyncio.wait_for(client_reader.readline(),
+                                           timeout=10.0)
+        if data is None:
+            log.warning("Received no data")
+            # exit echo loop and disconnect
+            return
+
+        sdata = data.decode().rstrip()
+        if sdata.upper() == 'BYE':
+            client_writer.write("BYE\n".encode())
+            break
+        response = ("ECHO %d: %s\n" % (i, sdata))
+        client_writer.write(response.encode())
+
 
 
 def main():
