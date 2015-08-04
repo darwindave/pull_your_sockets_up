@@ -16,8 +16,7 @@ class MyServerProtocol(WebSocketServerProtocol):
     def onOpen(self):
         print("WebSocket connection open.")
         print("Setting up comms task")
-        loop.create_task(handle_client(self.sendMessage))
-        # loop.create_task(random_data_generator(9000))
+        clients[id(self)] = self
 
     def onMessage(self, payload, isBinary):
         if isBinary:
@@ -27,6 +26,7 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
+        del clients[id(self)]
 
 
 def accept_client(client_reader, client_writer):
@@ -43,18 +43,25 @@ def accept_client(client_reader, client_writer):
 @asyncio.coroutine
 def handle_client(client_writer):
     while True:
-        print("Waiting for queue")
         data = yield from q.get()
-        print("Sending message to client:\t", data)
         client_writer(data.encode('utf-8'))
 
+
+@asyncio.coroutine
+def handle_clients():
+    while True:
+        if clients:
+            data = yield from q.get()
+            for id, client in clients.items():
+                client.sendMessage(data.encode('utf-8'))
+        else:
+            yield
 
 @asyncio.coroutine
 def random_data_generator(id):
     while True:
         rnd = random.randint(0, 50) / 10
         yield from asyncio.sleep(random.randint(0, 50) / 10)
-        print("Writing to queue: ", id)
         yield from q.put("Sleeped: {}s ID {}".format(rnd, id))
 
 
@@ -64,6 +71,8 @@ q = asyncio.Queue()
 factory = WebSocketServerFactory("ws://localhost:9000", debug=False)
 factory.protocol = MyServerProtocol
 my_tasks = [loop.create_task(random_data_generator(x)) for x in range(10)]
+loop.create_task(handle_clients())
+
 f = loop.create_server(factory, '0.0.0.0', 9000)
 server = loop.run_until_complete(f)
 loop.run_forever()
