@@ -150,9 +150,9 @@ async def handle_client_file(host, port):
             return
 
         sdata = data.decode().rstrip().upper()
-        if sdata != "ECHO 1: AFFIRMATIVE":
-            log.warning("Expected ECHO 1: AFFIRMATIVE, received '%s'", sdata)
-            return
+        # if sdata != "ECHO 1: AFFIRMATIVE":
+        #     log.warning("Expected ECHO 1: AFFIRMATIVE, received '%s'", sdata)
+        #     return
 
         with open(r"C:\Users\dave_000\Downloads\all telstra exchanges plus lat long.csv") as f:
             for line in f.readlines():

@@ -36,6 +36,8 @@ example in another terminal:
 
 import asyncio
 import logging
+import uuid
+import os
 
 log = logging.getLogger(__name__)
 
@@ -101,6 +103,7 @@ async def handle_client_file(client_reader, client_writer):
 
     # let client know we are ready
     client_writer.write("READY\n".encode())
+    file = open(''.join(['test-',str(uuid.uuid4()),'-output.txt']),'w')
     while True:
         i = i + 1
         # wait for input from client
@@ -112,13 +115,17 @@ async def handle_client_file(client_reader, client_writer):
             return
 
         sdata = data.decode().rstrip()
+
         if sdata.upper() == 'BYE':
             client_writer.write("BYE\n".encode())
+            file.flush()
+            file.close()
             break
-        response = ("ECHO %d: %s\n" % (i, sdata))
+
+        file.write(''.join((sdata, '\n')))
+        #response = ("ECHO %d: %s\n" % (i, sdata))
+        response = ("SEQ: %d\n" % (i))
         client_writer.write(response.encode())
-
-
 
 def main():
     loop = asyncio.get_event_loop()
