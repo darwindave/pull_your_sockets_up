@@ -56,13 +56,13 @@ def accept_client(client_reader, client_writer):
     log.info("New Connection")
     task.add_done_callback(client_done)
 
-
-async def handle_client(client_reader, client_writer):
+@asyncio.coroutine
+def handle_client(client_reader, client_writer):
     # send a hello to let the client know they are connected
     client_writer.write("HELLO\n".encode())
 
     # give client a chance to respond, timeout after 10 seconds
-    data = await asyncio.wait_for(client_reader.readline(),
+    data = yield from asyncio.wait_for(client_reader.readline(),
                                        timeout=10.0)
 
     if data is None:
@@ -82,7 +82,7 @@ async def handle_client(client_reader, client_writer):
     while True:
         i = i + 1
         # wait for input from client
-        data = await asyncio.wait_for(client_reader.readline(),
+        data = yield from asyncio.wait_for(client_reader.readline(),
                                            timeout=10.0)
         if data is None:
             log.warning("Received no data")
@@ -97,7 +97,8 @@ async def handle_client(client_reader, client_writer):
         client_writer.write(response.encode())
 
 
-async def handle_client_file(client_reader, client_writer):
+@asyncio.coroutine
+def handle_client_file(client_reader, client_writer):
     # now be an echo back server until client sends a bye
     i = 0  # sequence number
 
@@ -107,7 +108,7 @@ async def handle_client_file(client_reader, client_writer):
     while True:
         i = i + 1
         # wait for input from client
-        data = await asyncio.wait_for(client_reader.readline(),
+        data = yield from asyncio.wait_for(client_reader.readline(),
                                            timeout=10.0)
 
         sdata = data.decode().rstrip()
@@ -118,7 +119,7 @@ async def handle_client_file(client_reader, client_writer):
             file.close()
             break
 
-        file.write(''.join((sdata, '\n')))
+        file.write(data.decode())
         response = ("SEQ: %d\n" % (i))
         client_writer.write(response.encode())
 
